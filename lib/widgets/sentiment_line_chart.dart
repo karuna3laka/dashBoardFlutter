@@ -1,18 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../models/sentiment_data.dart';
+import '../services/api_service.dart';
 
-class SentimentLineChart extends StatelessWidget {
+class SentimentLineChart extends StatefulWidget {
   const SentimentLineChart({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.25, // 25% of screen height (approx 2 rows)
-      width: MediaQuery.of(context).size.width * 0.9, // 90% of screen width (4 columns)
+  _SentimentLineChartState createState() => _SentimentLineChartState();
+}
 
+class _SentimentLineChartState extends State<SentimentLineChart> {
+  List<SentimentData> chartData = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    try {
+      ApiService apiService = ApiService();
+      SentimentData data = await apiService.fetchSentimentData();
+
+      // For now, add the fetched data with a sample date
+      setState(() {
+        chartData = [
+          SentimentData(dayOfYear: 25, compound: data.compound),   // Jan 25
+          SentimentData(dayOfYear: 46, compound: 0.2),             // Feb 15
+          SentimentData(dayOfYear: 64, compound: 0.1),             // Mar 5
+          SentimentData(dayOfYear: 120, compound: 0.5),            // Apr 30
+          SentimentData(dayOfYear: 180, compound: -0.3),           // Jun 29
+          SentimentData(dayOfYear: 240, compound: 0.8),            // Aug 28
+          SentimentData(dayOfYear: 300, compound: -0.4),           // Oct 27
+          SentimentData(dayOfYear: 330, compound: 0.6),            // Dec 30
+        ];
+      });
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<FlSpot> spots = chartData.map((e) {
+      return FlSpot(e.dayOfYear.toDouble(), e.compound);
+    }).toList();
+
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.25,
+      width: MediaQuery.of(context).size.width * 0.9,
       child: LineChart(
         LineChartData(
-          gridData: FlGridData(  // edits on grids
+          gridData: FlGridData(
             show: true,
             drawVerticalLine: true,
             horizontalInterval: 1,
@@ -20,7 +61,7 @@ class SentimentLineChart extends StatelessWidget {
             getDrawingHorizontalLine: (value) {
               return FlLine(
                 color: Colors.grey.withOpacity(0.3),
-                strokeWidth: 10, // width of line
+                strokeWidth: 10,
               );
             },
             getDrawingVerticalLine: (value) {
@@ -31,30 +72,33 @@ class SentimentLineChart extends StatelessWidget {
             },
           ),
           titlesData: FlTitlesData(
-            show: true,  //data tiles
+            show: true,
             rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 20,
-                interval: 10,
+                interval: 30,
                 getTitlesWidget: (value, meta) {
                   Map<int, String> labels = {
-    0: 'Jan',
-    30: 'Feb',
-    60: 'Mar',
-    90: 'Apr',
-    120: 'May',
-    150: 'Jun',
-    180: 'Jul',
-    210: 'Aug',
-    240: 'Sep',
-    270: 'Oct',
-    300: 'Nov',
-    330: 'Dec'
-    };
-                  return Text(labels[value.toInt()] ?? '', style: const TextStyle(color: Colors.white, fontSize: 12));
+                    0: 'Jan',
+                    30: 'Feb',
+                    60: 'Mar',
+                    90: 'Apr',
+                    120: 'May',
+                    150: 'Jun',
+                    180: 'Jul',
+                    210: 'Aug',
+                    240: 'Sep',
+                    270: 'Oct',
+                    300: 'Nov',
+                    330: 'Dec'
+                  };
+                  return Text(
+                    labels[value.toInt()] ?? '',
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  );
                 },
               ),
             ),
@@ -77,22 +121,12 @@ class SentimentLineChart extends StatelessWidget {
             border: Border.all(color: Colors.grey.withOpacity(0.5), width: 1),
           ),
           minX: 0,
-          maxX: 330, //ange x axis and put 120 for 12 months and 10 each
+          maxX: 330,
           minY: -1,
           maxY: 1,
           lineBarsData: [
             LineChartBarData(
-              spots: const [
-                FlSpot(0, 0), //we can match these for each days
-                FlSpot(13, 0.3),
-                FlSpot(20, 0.3),
-                FlSpot(30, 0.5),
-                FlSpot(40, 0.6),
-                FlSpot(55, 0.9),
-                FlSpot(70, -1),
-                FlSpot(80, 0.8),
-                FlSpot(230, 0.8),
-              ],
+              spots: spots,
               isCurved: true,
               color: Colors.blue,
               barWidth: 3,
